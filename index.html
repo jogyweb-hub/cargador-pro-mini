@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<script src="https://bundle.run/avrgirl-arduino@5.2.0"></script>
+<script src="https://unpkg.com/avrgirl-arduino@5.2.0/dist/avrgirl-arduino.batch.js"></script>
 
 <script>
     const uploadBtn = document.getElementById('uploadBtn');
@@ -48,11 +48,6 @@
         statusBox.scrollTop = statusBox.scrollHeight;
     }
 
-    if (!("serial" in navigator)) {
-        log("ERROR: Navegador no compatible.", true);
-        uploadBtn.disabled = true;
-    }
-
     uploadBtn.addEventListener('click', function() {
         if (fileInput.files.length === 0) {
             alert("Selecciona un archivo .hex primero.");
@@ -62,34 +57,36 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
 
-        log("Archivo cargado: " + file.name);
+        log("Archivo preparado: " + file.name);
 
         reader.onload = function(event) {
             const contents = event.target.result;
             
-            log("Iniciando conexión...");
+            log("Iniciando motor de flasheo...");
 
             try {
-                // Usamos el constructor de la librería bundle
+                // Instanciamos el objeto usando el nombre global que crea el script de arriba
                 const avrgirl = new window.AvrgirlArduino({
                     board: 'pro-mini',
                     debug: true
                 });
 
-                log("BUSCANDO PUERTO... (Mira la ventana de arriba)");
+                log("ABRIENDO PUERTO... SELECCIONA TU ARDUINO");
                 uploadBtn.disabled = true;
 
+                // Llamada directa al flasheo
                 avrgirl.flash(contents, function(err) {
                     if (err) {
                         log("ERROR: " + err.message, true);
+                        console.error(err);
                     } else {
-                        log("¡CARGA EXITOSA! 🎉");
+                        log("¡CARGA COMPLETADA CON ÉXITO! 🎉");
                     }
                     uploadBtn.disabled = false;
                 });
 
             } catch (error) {
-                log("Error al cargar motor: " + error.message, true);
+                log("Error de ejecución: " + error.message, true);
                 uploadBtn.disabled = false;
             }
         };
