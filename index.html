@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/avrgirl-arduino/dist/avrgirl-arduino.batch.js"></script>
+<script src="https://bundle.run/avrgirl-arduino@5.2.0"></script>
 
 <script>
     const uploadBtn = document.getElementById('uploadBtn');
@@ -48,13 +48,12 @@
         statusBox.scrollTop = statusBox.scrollHeight;
     }
 
-    // Verificar si el navegador soporta Web Serial
     if (!("serial" in navigator)) {
-        log("ERROR: Tu navegador no soporta Web Serial API.", true);
+        log("ERROR: Navegador no compatible.", true);
         uploadBtn.disabled = true;
     }
 
-    uploadBtn.addEventListener('click', () => {
+    uploadBtn.addEventListener('click', function() {
         if (fileInput.files.length === 0) {
             alert("Selecciona un archivo .hex primero.");
             return;
@@ -63,29 +62,36 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
 
-        log("Archivo seleccionado: " + file.name);
+        log("Archivo cargado: " + file.name);
 
         reader.onload = function(event) {
             const contents = event.target.result;
             
-            // Usamos el constructor global que carga el script de unpkg
-            const avrgirl = new AvrgirlArduino({
-                board: 'pro-mini',
-                debug: true
-            });
+            log("Iniciando conexión...");
 
-            log("Solicitando acceso al puerto USB...");
-            uploadBtn.disabled = true;
+            try {
+                // Usamos el constructor de la librería bundle
+                const avrgirl = new window.AvrgirlArduino({
+                    board: 'pro-mini',
+                    debug: true
+                });
 
-            avrgirl.flash(contents, (err) => {
-                if (err) {
-                    log("ERROR: " + err.message, true);
-                    console.error(err);
-                } else {
-                    log("¡CARGA COMPLETADA CON ÉXITO! 🎉");
-                }
+                log("BUSCANDO PUERTO... (Mira la ventana de arriba)");
+                uploadBtn.disabled = true;
+
+                avrgirl.flash(contents, function(err) {
+                    if (err) {
+                        log("ERROR: " + err.message, true);
+                    } else {
+                        log("¡CARGA EXITOSA! 🎉");
+                    }
+                    uploadBtn.disabled = false;
+                });
+
+            } catch (error) {
+                log("Error al cargar motor: " + error.message, true);
                 uploadBtn.disabled = false;
-            });
+            }
         };
 
         reader.readAsArrayBuffer(file);
