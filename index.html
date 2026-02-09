@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargador Pro Mini Online</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background-color: #161b22; 
+            padding: 30px; 
+            border-radius: 12px; 
+            border: 1px solid #30363d; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 400px; 
+            text-align: center; 
+        }
+        h2 { color: #58a6ff; margin-bottom: 5px; }
+        p { font-size: 0.9rem; color: #8b949e; margin-bottom: 25px; }
+        input[type="file"] { margin-bottom: 20px; font-size: 0.9rem; }
+        button { 
+            background-color: #238636; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            width: 100%; 
+            transition: 0.2s; 
+        }
+        button:hover { background-color: #2ea043; }
+        button:disabled { background-color: #21262d; color: #484f58; cursor: not-allowed; }
+        #log { 
+            margin-top: 20px; 
+            background: #010409; 
+            padding: 15px; 
+            border-radius: 6px; 
+            font-family: monospace; 
+            font-size: 0.8rem; 
+            text-align: left; 
+            height: 120px; 
+            overflow-y: auto; 
+            border: 1px solid #30363d; 
+            color: #7ee787; 
+        }
+        .err { color: #f85149; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Pro Mini Flasher</h2>
+    <p>Carga archivos .hex desde tu navegador</p>
+    
+    <input type="file" id="hexFile" accept=".hex">
+    
+    <button id="uploadBtn">CONECTAR Y FLASHEAR</button>
+
+    <div id="log">Esperando selección de archivo...</div>
+</div>
+
+<script type="module">
+    // Importamos la librería desde esm.sh para compatibilidad total con GitHub Pages
+    import Avrgirl from 'https://esm.sh/avrgirl-arduino-next';
+
+    const btn = document.getElementById('uploadBtn');
+    const logDiv = document.getElementById('log');
+    const fileInput = document.getElementById('hexFile');
+
+    function writeLog(msg, isError = false) {
+        const span = document.createElement('div');
+        if (isError) span.className = 'err';
+        span.innerHTML = `> ${msg}`;
+        logDiv.appendChild(span);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Verificar si el navegador soporta Web Serial
+    if (!("serial" in navigator)) {
+        writeLog("ERROR: Tu navegador no soporta Web Serial API. Usa Chrome o Edge.", true);
+        btn.disabled = true;
+    }
+
+    btn.addEventListener('click', async () => {
+        if (!fileInput.files[0]) {
+            alert("Por favor, selecciona un archivo .hex primero.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        writeLog("Leyendo archivo...");
+
+        reader.onload = async (e) => {
+            const intelHex = e.target.result;
+
+            // Configuración específica para el Pro Mini (Atmega328p)
+            const avrgirl = new Avrgirl({
+                board: 'pro-mini',
+                debug: true
+            });
+
+            try {
+                btn.disabled = true;
+                writeLog("Abriendo selector de puerto...");
+
+                // La librería solicita el puerto y flashea automáticamente
+                avrgirl.flash(intelHex, (err) => {
+                    if (err) {
+                        writeLog("Error al flashear: " + err.message, true);
+                        console.error(err);
+                    } else {
+                        writeLog("¡CARGA EXITOSA! 🎉");
+                    }
+                    btn.disabled = false;
+                });
+
+            } catch (error) {
+                writeLog("Error de conexión: " + error.message, true);
+                btn.disabled = false;
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+</script>
+
+</body>
+</html>
