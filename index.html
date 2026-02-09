@@ -33,10 +33,9 @@
     </div>
 </div>
 
-<script type="module">
-    // Usamos Skypack, que es más fiable para GitHub Pages y evita el error 404
-    import Avrgirl from 'https://cdn.skypack.dev/avrgirl-arduino-next';
+<script src="https://unpkg.com/avrgirl-arduino/dist/avrgirl-arduino.batch.js"></script>
 
+<script>
     const uploadBtn = document.getElementById('uploadBtn');
     const statusBox = document.getElementById('status-box');
     const fileInput = document.getElementById('hexFile');
@@ -49,14 +48,13 @@
         statusBox.scrollTop = statusBox.scrollHeight;
     }
 
-    // Verificar compatibilidad del navegador
+    // Verificar si el navegador soporta Web Serial
     if (!("serial" in navigator)) {
         log("ERROR: Tu navegador no soporta Web Serial API.", true);
-        log("Usa la versión más reciente de Chrome o Edge.", true);
         uploadBtn.disabled = true;
     }
 
-    uploadBtn.addEventListener('click', async () => {
+    uploadBtn.addEventListener('click', () => {
         if (fileInput.files.length === 0) {
             alert("Selecciona un archivo .hex primero.");
             return;
@@ -65,37 +63,29 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
 
-        log("Archivo cargado: " + file.name);
+        log("Archivo seleccionado: " + file.name);
 
-        reader.onload = async (event) => {
+        reader.onload = function(event) {
             const contents = event.target.result;
             
-            // Configuración para Pro Mini
-            const avrgirl = new Avrgirl({
+            // Usamos el constructor global que carga el script de unpkg
+            const avrgirl = new AvrgirlArduino({
                 board: 'pro-mini',
                 debug: true
             });
 
-            try {
-                uploadBtn.disabled = true;
-                log("Solicitando acceso al puerto USB...");
-                log("Selecciona tu adaptador FTDI en la lista.");
+            log("Solicitando acceso al puerto USB...");
+            uploadBtn.disabled = true;
 
-                // El flasheo inicia la petición del puerto
-                avrgirl.flash(contents, (err) => {
-                    if (err) {
-                        log("ERROR: " + err.message, true);
-                        console.error(err);
-                    } else {
-                        log("¡CARGA COMPLETADA CON ÉXITO! 🎉");
-                    }
-                    uploadBtn.disabled = false;
-                });
-
-            } catch (error) {
-                log("Error de sistema: " + error.message, true);
+            avrgirl.flash(contents, (err) => {
+                if (err) {
+                    log("ERROR: " + err.message, true);
+                    console.error(err);
+                } else {
+                    log("¡CARGA COMPLETADA CON ÉXITO! 🎉");
+                }
                 uploadBtn.disabled = false;
-            }
+            });
         };
 
         reader.readAsArrayBuffer(file);
